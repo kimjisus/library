@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>도서관 대출/반납 시스템</title>
+  <style>
+    body { font-family: sans-serif; padding: 20px; max-width: 800px; margin: auto; }
+    input, select, button { margin: 5px 0; padding: 5px; }
+    .book-list { margin-top: 20px; }
+    .book-item { margin-bottom: 8px; }
+    .borrowed { color: red; }
+  </style>
+</head>
+<body>
+  <h1>📚 도서관 대출/반납 시스템</h1>
+
+  <label>사용자 이름: <input type="text" id="username" /></label><br>
+  <label>도서 제목: <input type="text" id="bookTitle" /></label><br>
+  <label>작업 선택:
+    <select id="action">
+      <option value="borrow">대출</option>
+      <option value="return">반납</option>
+      <option value="extend">기한 연장</option>
+    </select>
+  </label><br>
+  <button onclick="handleAction()">실행</button>
+
+  <div class="book-list">
+    <h2>📖 도서 목록</h2>
+    <div id="bookList"></div>
+  </div>
+
+  <script>
+    const MAX_BORROW = 3;
+
+    const books = [
+      { title: "1984", isBorrowed: false, borrower: null, dueDate: null },
+      { title: "데미안", isBorrowed: false, borrower: null, dueDate: null },
+      { title: "죄와 벌", isBorrowed: false, borrower: null, dueDate: null },
+      { title: "백년 동안의 고독", isBorrowed: false, borrower: null, dueDate: null },
+      { title: "파우스트", isBorrowed: false, borrower: null, dueDate: null },
+    ];
+
+    const userBorrowMap = {};
+
+    function updateBookList() {
+      const listDiv = document.getElementById("bookList");
+      listDiv.innerHTML = "";
+      books.forEach(book => {
+        const div = document.createElement("div");
+        div.className = "book-item";
+        div.innerHTML = `<strong>${book.title}</strong> - ${book.isBorrowed ? 
+          `<span class="borrowed">[대출 중] ${book.borrower} / 기한: ${book.dueDate}</span>` :
+          `[대출 가능]`}`;
+        listDiv.appendChild(div);
+      });
+    }
+
+    function handleAction() {
+      const username = document.getElementById("username").value.trim();
+      const bookTitle = document.getElementById("bookTitle").value.trim();
+      const action = document.getElementById("action").value;
+
+      if (!username || !bookTitle) {
+        alert("사용자 이름과 도서 제목을 모두 입력해주세요.");
+        return;
+      }
+
+      const book = books.find(b => b.title === bookTitle);
+      if (!book) {
+        alert("해당 도서는 존재하지 않습니다.");
+        return;
+      }
+
+      if (!userBorrowMap[username]) userBorrowMap[username] = [];
+
+      if (action === "borrow") {
+        if (book.isBorrowed) {
+          alert("이미 대출 중인 도서입니다.");
+        } else if (userBorrowMap[username].length >= MAX_BORROW) {
+          alert(`최대 ${MAX_BORROW}권까지만 대출할 수 있습니다.`);
+        } else {
+          book.isBorrowed = true;
+          book.borrower = username;
+          const dueDate = new Date();
+          dueDate.setDate(dueDate.getDate() + 14);
+          book.dueDate = dueDate.toISOString().split("T")[0];
+          userBorrowMap[username].push(bookTitle);
+          alert(`✅ '${bookTitle}' 대출 완료! 반납 기한: ${book.dueDate}`);
+        }
+
+      } else if (action === "return") {
+        if (!book.isBorrowed || book.borrower !== username) {
+          alert("반납할 수 없습니다. (대출자가 아님)");
+        } else {
+          book.isBorrowed = false;
+          book.borrower = null;
+          book.dueDate = null;
+          userBorrowMap[username] = userBorrowMap[username].filter(t => t !== bookTitle);
+          alert(`✅ '${bookTitle}' 반납 완료!`);
+        }
+
+      } else if (action === "extend") {
+        if (!book.isBorrowed || book.borrower !== username) {
+          alert("기한 연장이 불가능합니다.");
+        } else {
+          const newDate = new Date(book.dueDate);
+          newDate.setDate(newDate.getDate() + 7);
+          book.dueDate = newDate.toISOString().split("T")[0];
+          alert(`✅ '${bookTitle}' 반납 기한 연장: ${book.dueDate}`);
+        }
+      }
+
+      updateBookList();
+    }
+
+    updateBookList();
+  </script>
+</body>
+</html>
